@@ -1,12 +1,15 @@
 streamlit
-PyPDF2
+firebase-admin
+pyrebase4
 python-dotenv
 
-langchain==0.1.17
-langchain-community==0.0.36
-langchain-text-splitters==0.0.1
-langchain-google-genai==0.0.9
-langchain-huggingface==0.0.3
-
+langchain
+langchain-community
+langchain-huggingface
 sentence-transformers
 faiss-cpu
+PyPDF2
+
+transformers
+pillow
+google-generativeai
