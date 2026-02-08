@@ -1,15 +1,12 @@
 streamlit
 firebase-admin
 pyrebase4
-python-dotenv
-
 langchain
 langchain-community
 langchain-huggingface
 sentence-transformers
 faiss-cpu
 PyPDF2
-
 transformers
 pillow
 google-generativeai
