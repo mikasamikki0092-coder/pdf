@@ -2,8 +2,7 @@ import streamlit as st
 import firebase_admin
 from firebase_admin import credentials, auth
 import pyrebase
-from dotenv import load_dotenv
-import os
+import json
 import asyncio
 from PyPDF2 import PdfReader
 from PIL import Image
@@ -16,24 +15,6 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.prompts import ChatPromptTemplate
 from langchain_google_genai import ChatGoogleGenerativeAI
 
-# -------------------- ENV --------------------
-load_dotenv()
-FIREBASE_API_KEY = os.getenv("FIREBASE_API_KEY")
-
-# -------------------- FIREBASE INIT --------------------
-if not firebase_admin._apps:
-    cred = credentials.Certificate("firebase_key.json")
-    firebase_admin.initialize_app(cred)
-
-firebase_config = {
-    "apiKey": FIREBASE_API_KEY,
-    "authDomain": "slidesemse.firebaseapp.com",
-    "projectId": "slidesemse",
-}
-
-firebase = pyrebase.initialize_app(firebase_config)
-pb_auth = firebase.auth()
-
 # -------------------- PAGE CONFIG --------------------
 st.set_page_config(
     page_title="SlideSense",
@@ -41,6 +22,21 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+
+# -------------------- FIREBASE INIT (STREAMLIT CLOUD) --------------------
+if not firebase_admin._apps:
+    firebase_private_key = json.loads(st.secrets["FIREBASE_PRIVATE_KEY"])
+    cred = credentials.Certificate(firebase_private_key)
+    firebase_admin.initialize_app(cred)
+
+firebase_config = {
+    "apiKey": st.secrets["FIREBASE_API_KEY"],
+    "authDomain": f'{firebase_private_key["project_id"]}.firebaseapp.com',
+    "projectId": firebase_private_key["project_id"],
+}
+
+firebase = pyrebase.initialize_app(firebase_config)
+pb_auth = firebase.auth()
 
 # -------------------- SESSION --------------------
 if "logged_in" not in st.session_state:
@@ -72,30 +68,32 @@ def describe_image(image: Image.Image):
 
 # -------------------- AUTH UI --------------------
 def login_ui():
-    st.markdown("## 🔐 SlideSense Login (Firebase OTP)")
+    st.markdown("<h2 style='text-align:center;'>🔐 SlideSense Login</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align:center;'>Firebase Email OTP Authentication</p>", unsafe_allow_html=True)
+    st.markdown("---")
 
-    email = st.text_input("Enter your email")
+    email = st.text_input("📧 Enter your email")
 
     col1, col2 = st.columns(2)
 
     with col1:
-        if st.button("Send OTP"):
+        if st.button("📨 Send OTP"):
             try:
                 pb_auth.send_password_reset_email(email)
-                st.success("✅ OTP sent to your email")
                 st.session_state.temp_email = email
-            except Exception as e:
+                st.success("✅ OTP sent to your email")
+            except:
                 st.error("❌ Failed to send OTP")
 
     with col2:
-        otp = st.text_input("Enter OTP (password from email)", type="password")
+        otp = st.text_input("🔑 Enter OTP (password from email)", type="password")
 
-        if st.button("Verify OTP"):
+        if st.button("✅ Verify OTP"):
             try:
                 user = pb_auth.sign_in_with_email_and_password(st.session_state.temp_email, otp)
                 st.session_state.logged_in = True
                 st.session_state.user_email = st.session_state.temp_email
-                st.success("✅ Login successful")
+                st.success("🎉 Login successful")
                 st.rerun()
             except:
                 st.error("❌ Invalid OTP")
